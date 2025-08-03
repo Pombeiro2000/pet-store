@@ -15,7 +15,7 @@ datasource db {
 }
 
 model Product {
-  id            Int         @id @default(autoincrement())
+  id            String      @id @default(uuid())
   name          String
   description   String
   price         Float
@@ -41,7 +41,7 @@ model Order {
 model OrderItem {
   id        String  @id @default(uuid())
   orderId   String
-  productId Int
+  productId String
   quantity  Int
   price     Float
   order     Order   @relation(fields: [orderId], references: [id])
