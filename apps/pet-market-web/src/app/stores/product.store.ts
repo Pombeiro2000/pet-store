@@ -1,20 +1,35 @@
 import { inject } from '@angular/core'
 import { signalStore, withState, withMethods, patchState } from '@ngrx/signals'
 import { Apollo, gql } from 'apollo-angular';
-import { tap } from 'rxjs';
+import { catchError, EMPTY, map, tap } from 'rxjs';
 
 const GET_PRODUCTS = gql`
     query GetProducts {
-    products {
-        id
-        name
-        description
-        price
-        image
-        stripePriceId
-    }
+        products {
+            id
+            name
+            description
+            price
+            image
+            stripePriceId
+        }
     }
 `
+
+const SEARCH_PRODUCTS = gql`
+  query SearchProducts($searchTerm: String!) {
+    searchProducts(term: $searchTerm) {
+      id
+      name
+      description
+      price
+      image
+      stripePriceId
+    }
+  }
+`;
+
+
 export interface Product {
     id: string;
     name: string;
@@ -31,37 +46,56 @@ export interface ProductState {
     products: Product[],
     featuredProducts: Product[],
     loading: boolean,
-    error:string | null
+    error: string | null
 }
 
 const initialState: ProductState = {
-    products:[],
+    products: [],
     featuredProducts: [],
     loading: false,
-    error:null
+    error: null
 }
 export const productStore = signalStore(
     {
-    providedIn: 'root'
+        providedIn: 'root'
     },
     withState(initialState),
-    withMethods((store, apollo = inject(Apollo))=> ({
+    withMethods((store, apollo = inject(Apollo)) => ({
         loadProducts() {
-            patchState(store, {loading: true});
-            apollo.watchQuery<{products: Product[]}>({
+            patchState(store, { loading: true, error: null });
+            apollo.watchQuery<{ products: Product[] }>({
                 query: GET_PRODUCTS
             }).valueChanges.pipe(
                 tap({
-                    next: ({data}) => patchState(
+                    next: ({ data }) => patchState(
                         store,
-                        {products: data.products, loading: false}
+                        { products: data.products, loading: false }
                     ),
                     error: (error) => patchState(
                         store,
-                        {error: error.message, loading:false}
+                        { error: error.message, loading: false }
                     )
                 })
             ).subscribe()
+        },
+        searchProducts(term: string) {
+            patchState(store, { loading: true, error: null });
+            apollo.query<{ searchProducts: Product[] }>({
+                query: SEARCH_PRODUCTS,
+                variables: {
+                    searchTerm: term
+                }
+            })
+            .pipe(
+                map(({ data }) =>
+                    patchState(store, { products: data.searchProducts, loading: false })
+                ),
+                catchError((error) => {
+                    patchState(store, {error: error.message, loading: false})
+                    return EMPTY;
+                })
+            )
+            .subscribe()
         }
     }))
 )
