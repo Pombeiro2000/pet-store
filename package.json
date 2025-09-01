@@ -91,7 +91,7 @@
     "graphql": "^16.11.0",
     "reflect-metadata": "^0.1.13",
     "rxjs": "^7.8.0",
-    "stripe": "^18.4.0",
+    "stripe": "^18.5.0",
     "zone.js": "~0.15.0"
   }
 }
